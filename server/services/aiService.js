@@ -2,7 +2,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { logAIOperation, logger } = require('../config/logger');
 const AIProcessingLog = require('../models/AIProcessingLog');
 
-const MODEL_NAME = 'gemini-2.0-flash';
+const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 let genAI = null;
 
 function getClient() {
