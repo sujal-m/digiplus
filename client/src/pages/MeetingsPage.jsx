@@ -41,8 +41,9 @@ export default function MeetingsPage() {
       if (search.trim()) params.search = search.trim();
       const { data } = await meetingsAPI.list(params);
       const result = data.data;
-      setMeetings(result.meetings || result.docs || result || []);
-      setTotalPages(result.totalPages || Math.ceil((result.total || 0) / limit) || 1);
+      const list = result.items || result.meetings || result.docs || (Array.isArray(result) ? result : []);
+      setMeetings(Array.isArray(list) ? list : []);
+      setTotalPages(result.pages || result.totalPages || Math.ceil((result.total || 0) / limit) || 1);
     } catch (err) {
       const message = err.response?.data?.message || 'Failed to load meetings';
       setError(message);
