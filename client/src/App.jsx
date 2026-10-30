@@ -52,6 +52,7 @@ function App() {
           <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
           <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route index element={<DashboardPage />} />
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route path="meetings" element={<MeetingsPage />} />
             <Route path="meetings/new" element={<CreateMeetingPage />} />
             <Route path="meetings/:id" element={<MeetingDetailPage />} />
@@ -64,6 +65,7 @@ function App() {
             <Route path="knowledge" element={<KnowledgeBasePage />} />
             <Route path="notifications" element={<NotificationsPage />} />
           </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

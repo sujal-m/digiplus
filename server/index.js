@@ -94,6 +94,17 @@ app.use(errorHandler);
 // Start server
 async function start() {
   await connectDB();
+
+  // If database is empty, auto-seed realistic organizational fixtures
+  const User = require('./models/User');
+  const userCount = await User.countDocuments();
+  if (userCount === 0) {
+    logger.info('Database is empty. Automatically loading initial demonstration fixtures...');
+    const { seedData } = require('./seed');
+    await seedData();
+    logger.info('Initial demo fixtures seeded successfully');
+  }
+
   app.listen(PORT, () => {
     logger.info(`DigiPlus API server running on port ${PORT}`, { env: process.env.NODE_ENV });
   });

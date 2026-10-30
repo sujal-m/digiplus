@@ -22,7 +22,7 @@ export default function LoginPage() {
     try {
       await login(email, password);
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       const message = err.response?.data?.message || 'Invalid email or password';
       toast.error(message);

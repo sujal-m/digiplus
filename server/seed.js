@@ -11,32 +11,27 @@ const Document = require('./models/Document');
 
 const { connectDB, disconnectDB } = require('./config/db');
 
-async function seed() {
-  try {
-    await connectDB();
-    console.log('Connected to MongoDB');
+async function seedData() {
+  // Clear existing data
+  await Promise.all([
+    User.deleteMany({}),
+    Meeting.deleteMany({}),
+    ActionItem.deleteMany({}),
+    Decision.deleteMany({}),
+    Handover.deleteMany({}),
+    Notification.deleteMany({}),
+    Document.deleteMany({}),
+  ]);
 
-    // Clear existing data
-    await Promise.all([
-      User.deleteMany({}),
-      Meeting.deleteMany({}),
-      ActionItem.deleteMany({}),
-      Decision.deleteMany({}),
-      Handover.deleteMany({}),
-      Notification.deleteMany({}),
-      Document.deleteMany({}),
-    ]);
-    console.log('Cleared existing data');
-
-    // Create users
-    const users = await User.create([
-      { name: 'Amit Sharma', email: 'amit@digiplus.com', password: 'password123', role: 'admin', team: 'Engineering', title: 'Engineering Manager' },
-      { name: 'Priya Patel', email: 'priya@digiplus.com', password: 'password123', role: 'manager', team: 'Engineering', title: 'Tech Lead' },
-      { name: 'Rahul Verma', email: 'rahul@digiplus.com', password: 'password123', role: 'member', team: 'Engineering', title: 'Senior Developer' },
-      { name: 'Sneha Desai', email: 'sneha@digiplus.com', password: 'password123', role: 'member', team: 'Product', title: 'Product Manager' },
-      { name: 'Vikram Singh', email: 'vikram@digiplus.com', password: 'password123', role: 'member', team: 'Engineering', title: 'Developer' },
-      { name: 'Ananya Gupta', email: 'ananya@digiplus.com', password: 'password123', role: 'manager', team: 'Product', title: 'Senior Product Manager' },
-    ]);
+  // Create users
+  const users = await User.create([
+    { name: 'Amit Sharma', email: 'amit@digiplus.com', password: 'password123', role: 'admin', team: 'Engineering', title: 'Engineering Manager' },
+    { name: 'Priya Patel', email: 'priya@digiplus.com', password: 'password123', role: 'manager', team: 'Engineering', title: 'Tech Lead' },
+    { name: 'Rahul Verma', email: 'rahul@digiplus.com', password: 'password123', role: 'member', team: 'Engineering', title: 'Senior Developer' },
+    { name: 'Sneha Desai', email: 'sneha@digiplus.com', password: 'password123', role: 'member', team: 'Product', title: 'Product Manager' },
+    { name: 'Vikram Singh', email: 'vikram@digiplus.com', password: 'password123', role: 'member', team: 'Engineering', title: 'Developer' },
+    { name: 'Ananya Gupta', email: 'ananya@digiplus.com', password: 'password123', role: 'manager', team: 'Product', title: 'Senior Product Manager' },
+  ]);
     console.log(`Created ${users.length} users`);
 
     const [amit, priya, rahul, sneha, vikram, ananya] = users;
@@ -414,6 +409,14 @@ async function seed() {
     ]);
     console.log('Created notifications');
 
+  return { users, meetings, decisions, tasks, handovers };
+}
+
+async function runStandalone() {
+  try {
+    await connectDB();
+    console.log('Connected to MongoDB');
+    await seedData();
     console.log('\n✅ Seed data created successfully!\n');
     console.log('Demo accounts:');
     console.log('  amit@digiplus.com / password123 (Admin)');
@@ -422,7 +425,6 @@ async function seed() {
     console.log('  sneha@digiplus.com / password123 (Member)');
     console.log('  vikram@digiplus.com / password123 (Member)');
     console.log('  ananya@digiplus.com / password123 (Manager)');
-
     await disconnectDB();
     process.exit(0);
   } catch (error) {
@@ -431,4 +433,8 @@ async function seed() {
   }
 }
 
-seed();
+if (require.main === module) {
+  runStandalone();
+}
+
+module.exports = { seedData };

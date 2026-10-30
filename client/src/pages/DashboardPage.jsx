@@ -26,7 +26,8 @@ export default function DashboardPage() {
         activityAPI.list({ limit: 10 }),
       ]);
       setStats(statsRes.data.data);
-      setActivities(activityRes.data.data?.activities || activityRes.data.data || []);
+      const actList = activityRes.data.data?.items || activityRes.data.data?.activities || statsRes.data.data?.recentActivity || [];
+      setActivities(Array.isArray(actList) ? actList : []);
     } catch (err) {
       const message = err.response?.data?.message || 'Failed to load dashboard data';
       setError(message);
@@ -63,16 +64,16 @@ export default function DashboardPage() {
     { label: 'Total Meetings', value: stats?.totalMeetings ?? 0, icon: Calendar, color: 'bg-blue-50 text-blue-600' },
     { label: 'Open Tasks', value: stats?.openTasks ?? 0, icon: CheckSquare, color: 'bg-indigo-50 text-indigo-600' },
     { label: 'Overdue Tasks', value: stats?.overdueTasks ?? 0, icon: AlertTriangle, color: 'bg-red-50 text-red-600' },
-    { label: 'Pending Handovers', value: stats?.pendingHandovers ?? 0, icon: ArrowRightLeft, color: 'bg-amber-50 text-amber-600' },
+    { label: 'Pending Handovers', value: stats?.totalHandovers ?? 0, icon: ArrowRightLeft, color: 'bg-amber-50 text-amber-600' },
   ];
 
   const tasksByStatus = stats?.tasksByStatus
     ? Object.entries(stats.tasksByStatus).map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count }))
     : [];
 
-  const pendingTasks = stats?.pendingTasks || [];
-  const upcomingMeetings = stats?.upcomingMeetings || [];
-  const pendingHandovers = stats?.pendingHandovers_list || stats?.pendingHandoversList || [];
+  const pendingTasks = Array.isArray(stats?.pendingTasks) ? stats.pendingTasks : (Array.isArray(stats?.myPendingTasks) ? stats.myPendingTasks : []);
+  const upcomingMeetings = Array.isArray(stats?.upcomingMeetings) ? stats.upcomingMeetings : [];
+  const pendingHandovers = Array.isArray(stats?.pendingHandoversList) ? stats.pendingHandoversList : (Array.isArray(stats?.pendingHandovers) ? stats.pendingHandovers : []);
 
   return (
     <div className="space-y-6">
@@ -126,13 +127,13 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-3 max-h-60 overflow-y-auto">
-              {activities.map((activity, idx) => (
+              {(Array.isArray(activities) ? activities : []).map((activity, idx) => (
                 <div key={activity._id || idx} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
                   <div className="h-8 w-8 rounded-full bg-indigo-50 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Clock className="h-4 w-4 text-indigo-600" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-gray-700">{activity.description || activity.action || 'Activity'}</p>
+                    <p className="text-sm text-gray-700 capitalize">{activity.description || (activity.action ? activity.action.replace(/_/g, ' ') : 'Activity')}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {activity.createdAt ? formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true }) : ''}
                     </p>
