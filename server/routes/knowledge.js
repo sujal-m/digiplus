@@ -81,7 +81,18 @@ router.get('/documents', auth, async (req, res, next) => {
 });
 
 // POST /api/knowledge/documents (Upload)
-router.post('/documents', auth, upload.single('file'), async (req, res, next) => {
+router.post('/documents', auth, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      logger.warn('Document upload error', { error: err.message, code: err.code });
+      return res.status(400).json({
+        success: false,
+        error: { message: err.message || 'File upload failed', code: err.code || 'UPLOAD_ERROR' }
+      });
+    }
+    next();
+  });
+}, async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({

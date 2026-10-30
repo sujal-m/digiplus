@@ -4,7 +4,6 @@ const API_BASE = '/api';
 
 const api = axios.create({
   baseURL: API_BASE,
-  headers: { 'Content-Type': 'application/json' },
 });
 
 // Request interceptor - add auth token
@@ -124,9 +123,7 @@ export const decisionsAPI = {
 // Knowledge API
 export const knowledgeAPI = {
   listDocuments: (params) => api.get('/knowledge/documents', { params }),
-  uploadDocument: (formData) => api.post('/knowledge/documents', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
+  uploadDocument: (formData) => api.post('/knowledge/documents', formData),
   getDocument: (id) => api.get(`/knowledge/documents/${id}`),
   deleteDocument: (id) => api.delete(`/knowledge/documents/${id}`),
   search: (params) => api.get('/knowledge/search', { params }),
