@@ -70,15 +70,26 @@ export default function CreateMeetingPage() {
     try {
       const payload = {
         ...formData,
+        dateTime: formData.dateTime || new Date(Date.now() + 86400000).toISOString(),
         status: asDraft ? 'draft' : 'scheduled',
-        agenda: formData.agenda.filter((a) => a.title.trim()),
+        participants: formData.participants.map(id => ({ user: id, role: 'required' })),
+        agenda: formData.agenda.filter((a) => a.title.trim()).map(a => ({
+          ...a,
+          duration: Number(a.duration) || 15
+        })),
       };
       const { data } = await meetingsAPI.create(payload);
       const meeting = data.data?.meeting || data.data;
       toast.success(asDraft ? 'Meeting saved as draft!' : 'Meeting created successfully!');
       navigate(`/meetings/${meeting._id}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create meeting');
+      const errDetails = err.response?.data?.error?.details;
+      const msg = err.response?.data?.error?.message || err.response?.data?.message;
+      if (Array.isArray(errDetails) && errDetails.length > 0) {
+        toast.error(errDetails.map(d => d.message || d).join(', '));
+      } else {
+        toast.error(msg || 'Failed to create meeting');
+      }
     } finally {
       setLoading(false);
     }

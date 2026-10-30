@@ -12,20 +12,25 @@ const { logActivity } = require('../services/activityService');
 const { createNotification } = require('../services/notificationService');
 
 const createMeetingSchema = z.object({
-  title: z.string().min(3).max(200),
+  title: z.string().min(1).max(200),
   description: z.string().optional().default(''),
   objective: z.string().optional().default(''),
-  dateTime: z.string().or(z.date()),
+  dateTime: z.string().or(z.date()).optional(),
   endTime: z.string().or(z.date()).optional(),
   location: z.string().optional().default(''),
-  participants: z.array(z.object({
-    user: z.string(),
-    role: z.enum(['organizer', 'required', 'optional']).optional().default('required'),
-  })).optional().default([]),
+  participants: z.array(
+    z.union([
+      z.string(),
+      z.object({
+        user: z.string(),
+        role: z.enum(['organizer', 'required', 'optional']).optional().default('required'),
+      }),
+    ])
+  ).optional().default([]),
   agenda: z.array(z.object({
     title: z.string(),
     description: z.string().optional().default(''),
-    duration: z.number().optional().default(15),
+    duration: z.number().or(z.string()).transform(v => Number(v) || 15).optional().default(15),
     order: z.number().optional().default(0),
   })).optional().default([]),
   status: z.enum(['draft', 'scheduled', 'in-progress', 'completed', 'archived']).optional().default('scheduled'),
@@ -83,8 +88,16 @@ router.get('/', auth, async (req, res, next) => {
 // POST /api/meetings
 router.post('/', auth, validate(createMeetingSchema), async (req, res, next) => {
   try {
+    const rawParticipants = req.body.participants || [];
+    const normalizedParticipants = rawParticipants.map(p => {
+      if (typeof p === 'string') return { user: p, role: 'required', attended: false };
+      return { user: p.user, role: p.role || 'required', attended: !!p.attended };
+    });
+
     const meetingData = {
       ...req.body,
+      dateTime: req.body.dateTime ? new Date(req.body.dateTime) : new Date(Date.now() + 3600000),
+      participants: normalizedParticipants,
       organizer: req.user._id,
     };
 
