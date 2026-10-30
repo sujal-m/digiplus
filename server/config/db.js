@@ -10,9 +10,9 @@ async function connectDB() {
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/digiplus';
   
   try {
-    // Attempt standard connection with 2.5s timeout
+    // Attempt standard connection with 10s timeout for cloud networks like Atlas
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 2500,
+      serverSelectionTimeoutMS: 10000,
     });
     logger.info('MongoDB connected successfully to primary URI', { uri: uri.replace(/\/\/.*@/, '//<credentials>@') });
     return;

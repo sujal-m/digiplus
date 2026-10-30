@@ -2,7 +2,16 @@ const winston = require('winston');
 const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
 
+const fs = require('fs');
 const LOG_DIR = process.env.LOG_DIR || path.join(__dirname, '..', 'logs');
+
+try {
+  if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+  }
+} catch (e) {
+  // Ignore permission error in restricted environments
+}
 
 const logFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
