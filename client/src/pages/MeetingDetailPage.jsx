@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { meetingsAPI, aiAPI, decisionsAPI, tasksAPI, usersAPI } from '../api/client';
+import { meetingsAPI, aiAPI, decisionsAPI, tasksAPI, usersAPI, knowledgeAPI } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Calendar, Clock, MapPin, Users, CheckCircle, AlertTriangle,
   Brain, FileText, ArrowRightLeft, Plus, Save, Sparkles, CheckSquare,
-  ChevronLeft, Loader2, Award, Info
+  ChevronLeft, Loader2, Award, Info, Link2, BookOpen
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -42,6 +42,13 @@ export default function MeetingDetailPage() {
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
   const [usersList, setUsersList] = useState([]);
 
+  // Linking state
+  const [allMeetings, setAllMeetings] = useState([]);
+  const [allDocuments, setAllDocuments] = useState([]);
+  const [selectedAntecedentMeeting, setSelectedAntecedentMeeting] = useState('');
+  const [selectedDocId, setSelectedDocId] = useState('');
+  const [linkingContext, setLinkingContext] = useState(false);
+
   const fetchMeeting = async () => {
     try {
       setLoading(true);
@@ -62,7 +69,52 @@ export default function MeetingDetailPage() {
   useEffect(() => {
     fetchMeeting();
     usersAPI.list().then(res => setUsersList(res.data.data.users || [])).catch(() => {});
+    meetingsAPI.list({ limit: 50 }).then(res => {
+      const items = res.data.data?.items || res.data.data || [];
+      setAllMeetings(items.filter(m => m._id !== id));
+    }).catch(() => {});
+    knowledgeAPI.listDocuments({ limit: 50 }).then(res => {
+      setAllDocuments(res.data.data?.items || []);
+    }).catch(() => {});
   }, [id]);
+
+  const handleLinkAntecedent = async () => {
+    if (!selectedAntecedentMeeting) return;
+    try {
+      setLinkingContext(true);
+      const existing = (meeting.relatedMeetings || []).map(m => m._id || m);
+      if (!existing.includes(selectedAntecedentMeeting)) {
+        await meetingsAPI.update(id, {
+          relatedMeetings: [...existing, selectedAntecedentMeeting],
+        });
+        toast.success('Antecedent meeting linked successfully');
+        fetchMeeting();
+      }
+    } catch (err) {
+      toast.error('Failed to link antecedent meeting');
+    } finally {
+      setLinkingContext(false);
+    }
+  };
+
+  const handleLinkDocument = async () => {
+    if (!selectedDocId) return;
+    try {
+      setLinkingContext(true);
+      const existing = (meeting.documents || []).map(d => d._id || d);
+      if (!existing.includes(selectedDocId)) {
+        await meetingsAPI.update(id, {
+          documents: [...existing, selectedDocId],
+        });
+        toast.success('Reference document linked successfully');
+        fetchMeeting();
+      }
+    } catch (err) {
+      toast.error('Failed to link document');
+    } finally {
+      setLinkingContext(false);
+    }
+  };
 
   const handleSaveNotes = async () => {
     try {
@@ -286,6 +338,7 @@ export default function MeetingDetailPage() {
             { id: 'recap', label: 'AI Recap' },
             { id: 'decisions', label: `Decisions (${decisions.length})` },
             { id: 'tasks', label: `Action Items (${actionItems.length})` },
+            { id: 'links', label: `Context & Docs (${(meeting.relatedMeetings?.length || 0) + (meeting.documents?.length || 0)})` },
           ].map(tab => (
             <button
               key={tab.id}
@@ -562,6 +615,99 @@ export default function MeetingDetailPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'links' && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Context Links & Antecedent Documents</h3>
+            <p className="text-xs text-gray-500">
+              Connecting this session with prior sprint meetings or architectural reference documents establishes context continuity and prevents informational silos.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Antecedent Meetings */}
+            <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/50 space-y-3">
+              <div className="flex items-center gap-2 text-indigo-700 font-semibold text-sm">
+                <Link2 className="w-4 h-4" /> Link Prior Meeting (Antecedent)
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={selectedAntecedentMeeting}
+                  onChange={(e) => setSelectedAntecedentMeeting(e.target.value)}
+                  className="flex-1 text-xs rounded-lg border border-gray-300 p-2 bg-white"
+                >
+                  <option value="">Choose antecedent meeting...</option>
+                  {allMeetings.map(m => (
+                    <option key={m._id} value={m._id}>{m.title}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleLinkAntecedent}
+                  disabled={!selectedAntecedentMeeting || linkingContext}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Link
+                </button>
+              </div>
+
+              <div className="space-y-1.5 pt-2">
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Linked Prior Meetings:</span>
+                {(meeting.relatedMeetings || []).length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">No prior meetings linked yet.</p>
+                ) : (
+                  meeting.relatedMeetings.map(m => (
+                    <div key={m._id || m} className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-2 text-xs">
+                      <span className="font-medium text-gray-800">{m.title || m}</span>
+                      <Link to={`/meetings/${m._id || m}`} className="text-indigo-600 hover:underline text-[11px]">View</Link>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Reference Documents */}
+            <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/50 space-y-3">
+              <div className="flex items-center gap-2 text-indigo-700 font-semibold text-sm">
+                <BookOpen className="w-4 h-4" /> Link Reference Document
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={selectedDocId}
+                  onChange={(e) => setSelectedDocId(e.target.value)}
+                  className="flex-1 text-xs rounded-lg border border-gray-300 p-2 bg-white"
+                >
+                  <option value="">Choose knowledge base doc...</option>
+                  {allDocuments.map(doc => (
+                    <option key={doc._id} value={doc._id}>{doc.title}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleLinkDocument}
+                  disabled={!selectedDocId || linkingContext}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Link
+                </button>
+              </div>
+
+              <div className="space-y-1.5 pt-2">
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Linked Documents:</span>
+                {(meeting.documents || []).length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">No reference documents linked yet.</p>
+                ) : (
+                  meeting.documents.map(doc => (
+                    <div key={doc._id || doc} className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-2 text-xs">
+                      <span className="font-medium text-gray-800">{doc.title || doc}</span>
+                      <Link to="/knowledge" className="text-indigo-600 hover:underline text-[11px]">Knowledge Base</Link>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
