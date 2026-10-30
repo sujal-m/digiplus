@@ -25,11 +25,11 @@
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^3.23.8",
     "pdf-parse": "^1.1.1",
-    "mammoth": "^1.8.0"
+    "mammoth": "^1.8.0",
+    "mongodb-memory-server": "^10.0.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "supertest": "^7.0.0",
-    "mongodb-memory-server": "^10.0.0"
+    "supertest": "^7.0.0"
   }
 }
