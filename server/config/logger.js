@@ -74,10 +74,12 @@ const aiLogger = winston.createLogger({
   transports: [aiTransport],
 });
 
-// Console transport in development
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({ format: consoleFormat }));
-}
+// Always enable Console transport so cloud container logs (Render/Docker) capture all output
+logger.add(new winston.transports.Console({
+  format: process.env.NODE_ENV === 'production'
+    ? winston.format.combine(winston.format.timestamp(), winston.format.json())
+    : consoleFormat,
+}));
 
 /**
  * Create a child logger with correlation ID

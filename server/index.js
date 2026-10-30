@@ -112,6 +112,7 @@ async function start() {
 
 if (process.env.NODE_ENV !== 'test') {
   start().catch((err) => {
+    console.error('FATAL SERVER START ERROR:', err);
     logger.error('Failed to start server', { error: err.message });
     process.exit(1);
   });
