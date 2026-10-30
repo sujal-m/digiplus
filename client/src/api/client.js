@@ -125,6 +125,7 @@ export const knowledgeAPI = {
   listDocuments: (params) => api.get('/knowledge/documents', { params }),
   uploadDocument: (formData) => api.post('/knowledge/documents', formData),
   getDocument: (id) => api.get(`/knowledge/documents/${id}`),
+  downloadDocument: (id) => api.get(`/knowledge/documents/${id}/download`, { responseType: 'blob' }),
   deleteDocument: (id) => api.delete(`/knowledge/documents/${id}`),
   search: (params) => api.get('/knowledge/search', { params }),
   suggestLinks: (data) => api.post('/knowledge/suggest-links', data),

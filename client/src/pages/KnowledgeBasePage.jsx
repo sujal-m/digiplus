@@ -103,6 +103,22 @@ export default function KnowledgeBasePage() {
     }
   };
 
+  const handleDownloadDoc = async (doc) => {
+    try {
+      const response = await knowledgeAPI.downloadDocument(doc._id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', doc.fileName || doc.title || 'document');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Failed to download document');
+    }
+  };
+
   const handleDeleteDoc = async (id) => {
     if (!window.confirm('Delete this document from the knowledge base?')) return;
     try {
@@ -350,13 +366,13 @@ export default function KnowledgeBasePage() {
                       Uploaded by {doc.uploadedBy?.name || 'User'}
                     </span>
                     <div className="flex items-center gap-2">
-                      <a
-                        href={`/api/knowledge/documents/${doc._id}/download`}
+                      <button
+                        onClick={() => handleDownloadDoc(doc)}
                         title="Download file"
                         className="p-1.5 rounded text-gray-500 hover:text-indigo-600 hover:bg-gray-100 transition-colors"
                       >
                         <Download className="w-4 h-4" />
-                      </a>
+                      </button>
                       <button
                         onClick={() => handleDeleteDoc(doc._id)}
                         title="Delete document"
